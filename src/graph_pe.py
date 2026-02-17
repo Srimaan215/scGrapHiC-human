@@ -103,8 +103,9 @@ def graph_pe(matrix, encoding_dim, lap_norm='sym', eig_norm='abs-max'):
 
     
     
-    sparse_matrix = sparse.csr_matrix(matrix)
+    sparse_matrix = sparse.csr_matrix(matrix.astype(np.float32))
     edge_index, edge_weight = from_scipy_sparse_matrix(sparse_matrix)
+    edge_weight = edge_weight.float()  # Ensure float type for laplacian
     
     edge_index, edge_weight = get_laplacian(edge_index, edge_weight, normalization=lap_norm, num_nodes=N)
     L = to_scipy_sparse_matrix(edge_index, edge_weight, N)

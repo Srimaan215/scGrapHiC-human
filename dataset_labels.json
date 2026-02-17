@@ -7,11 +7,13 @@
         "E95": 4,
         "EX05": 5,
         "EX15": 6,
-        "brain": 7
+        "brain": 7,
+        "human_blood": 8
     },
     "tissue": {
         "embryo": 0,
-        "brain": 1
+        "brain": 1,
+        "blood": 2
     },
     "cell_type": {
         "ExE_ectoderm": 0,
@@ -41,6 +43,15 @@
         "Ex3": 24,
         "In1": 25,
         "In2": 26,
-        "Oli": 27
+        "Oli": 27,
+        "HSC": 28,
+        "MPP": 29,
+        "LMPP": 30,
+        "MEP": 31,
+        "B_NK": 32,
+        "Unk_HSC": 33,
+        "Unk_2": 34,
+        "Unk_5": 35,
+        "Unk_B_NK": 36
     }
 }

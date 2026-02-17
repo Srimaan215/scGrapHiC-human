@@ -237,7 +237,7 @@ def run_chromosight(cooler_file):
     )
     
     if not os.path.exists('{}.tsv'.format(borders_output_path)):
-        cmd_path = 'chromosight detect --pattern=borders --pearson=0.3 --threads 1 {} {};'.format(
+        cmd_path = 'chromosight detect --pattern=borders --pearson=0.3 --threads 1 --norm=raw --perc-zero=100 --perc-undetected=100 {} {};'.format(
             cooler_file,
             borders_output_path
         )
@@ -289,7 +289,10 @@ def tad_sim(generated, target, file_identifier, PARAMETERS, output_path, feature
 
     base = read_chromosight_tsv_file(generated_tads)
     target = read_chromosight_tsv_file(target_tads)
-
+# new section added to OG code
+    if len(base) == 0 and len(target) == 0:
+        return np.nan
+#
     _, _, f1, _ = overlap_analysis(base, target, feature_rp)
     
     return f1

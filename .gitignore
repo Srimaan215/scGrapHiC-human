@@ -1,15 +1,77 @@
-scGrapHiC/
-scgraphic/
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.ipynb_checkpoints/
+*.pyc
+
+# Data files (large - should be stored in scratch/)
+*.npz
+*.hic
+*.cool
+*.mcool
+*.h5
+*.hdf5
+*.npy
+
+# Text data files (keep small reference files, exclude large datasets)
+metadata_barcodes.txt
+pairs_barcodes.txt
+4DNFI5IAH9H1.hic
+GM12878_ENCODE.hic
+
+# Model checkpoints and weights (stored in scratch/)
+*.ckpt
+*.pt
+*.pth
+*.pkl
+*.pickle
+
+# Logs and outputs (stored in scratch/)
 logs/
 outputs/
-tests/
+*.log
+*.out
+*.err
+lightning_logs/
+results/
 visualizations/
+
+# Batch job outputs
+slurm-*.out
+
+# IDEs and editors
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Original/reference directories
+scGrapHiC/
+scgraphic/
+tests/
 scripts/
-*.cool
-*.pyc
-*.png
 hickit-0.1_x64-linux/
 main
-*.out
-lightning_logs/
+
+# System and environment files
+.env
+.envrc
+miniforge3/
+.conda/
+
+# Temporary files
+*.tmp
+*.bak
+*.cache
+*.png
+
+# Downloaded data (keep scripts, exclude data)
+Downloads/

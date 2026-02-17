@@ -131,7 +131,11 @@ def log_results(generated, target, score, idx, mtd, PARAMETERS):
         target
     )
     
+    # Write header if file is new or empty
+    write_header = not os.path.exists(results_file) or os.path.getsize(results_file) == 0
     with open(results_file, 'a+') as f:
+        if write_header:
+            f.write('tissue,stage,cell_type,cell_count,chromosome,start_bin,end_bin,MSE,SSIM,GenomeDISCO,SCC\n')
         f.write(
             '{},{},{},{},{},{},{},{},{},{},{}\n'.format(
                 tissue_dict[mtd[1]],

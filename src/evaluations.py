@@ -207,10 +207,12 @@ def SCC(A:np.ndarray, B:np.ndarray, max_bins:int=40, correlation_method:str='PCC
 ############################################################# GenomeDISCO ##############################################################################
 # SRC https://github.com/kundajelab/genomedisco
 def to_transition(mtogether):
-    sums = mtogether.sum(axis=1)
-    # make the ones that are 0, so that we don't divide by 0
-    sums[sums == 0.0] = 1.0
-    D = sps.spdiags(1.0 / sums.flatten(), [0], mtogether.shape[0], mtogether.shape[1], format='csr')
+    mtogether = csr_matrix(mtogether, dtype=np.float64)
+    sums = np.asarray(mtogether.sum(axis=1)).flatten()
+    sums = np.nan_to_num(sums, nan=1.0, posinf=1.0, neginf=1.0)
+    sums[sums <= 1e-12] = 1.0
+    with np.errstate(divide='ignore', invalid='ignore'):
+        D = sps.spdiags(1.0 / sums, [0], mtogether.shape[0], mtogether.shape[1], format='csr')
     return D.dot(mtogether)
 
 
@@ -318,19 +320,32 @@ def run_all_evaluation(generated, targets, root, storage, PARAMETERS):
     cooler_files = os.path.join(storage, 'cooler')
     create_directory(cooler_files)
     
-    with open(os.path.join(root, 'full_results.csv'), 'a+') as f:
+    full_results_path = os.path.join(root, 'full_results.csv')
+    write_header = not os.path.exists(full_results_path) or os.path.getsize(full_results_path) == 0
+    with open(full_results_path, 'a+') as f:
+        if write_header:
+            f.write('tissue,stage,cell_type,cell_count,chromosome,start_bin,end_bin,SSIM,GenomeDISCO,SCC,TAD_Sim,MSE,KendallTau\n')
         for g, t in zip(generated, targets):
             file_identifier = g.split('/')[-1].split('.')[0]
 
             g = np.load(g)
             t = np.load(t)
             
+            # Skip if matrices are empty or have no variance
+            if g.size == 0 or t.size == 0 or np.std(g) < 1e-10 or np.std(t) < 1e-10:
+                print(f"Skipping {file_identifier} - empty or constant matrix")
+                continue
+            
             # save the visualizations
             visualize_hic_contact_matrix(g, os.path.join(generated_visualizations, file_identifier + '.png'))
             visualize_hic_contact_matrix(t, os.path.join(target_visualizations, file_identifier + '.png'))
             
             # extract biological features
-            f1_score = tad_sim(g, t, file_identifier, PARAMETERS, cooler_files)
+            try:
+                f1_score = tad_sim(g, t, file_identifier, PARAMETERS, cooler_files)
+            except Exception as e:
+                print(f"TAD_Sim failed for {file_identifier}: {e}")
+                f1_score = np.nan
 
             # Get all the parameters
             cell_counts = int(storage.split('/')[-1])
@@ -341,6 +356,28 @@ def run_all_evaluation(generated, targets, root, storage, PARAMETERS):
             region_x = int(file_identifier.split('_')[1].split('s')[-1])
             region_y = int(file_identifier.split('_')[2].split('e')[-1])
             
+            # Compute metrics with error handling
+            try:
+                ssim_val = ssim(g, t)
+            except Exception:
+                ssim_val = np.nan
+            try:
+                gd_val = genome_disco(g, t)
+            except Exception:
+                gd_val = np.nan
+            try:
+                scc_val = SCC(g, t)
+            except Exception:
+                scc_val = np.nan
+            try:
+                mse_val = mse(g, t)
+            except Exception:
+                mse_val = np.nan
+            try:
+                kt_val = kendall_tau(g, t)
+            except Exception:
+                kt_val = np.nan
+            
             f.write(
                 '{},{},{},{},{},{},{},{},{},{},{},{},{}\n'.format(
                     tissue,
@@ -350,16 +387,17 @@ def run_all_evaluation(generated, targets, root, storage, PARAMETERS):
                     chromosome,
                     region_x,
                     region_y,
-                    ssim(g, t),
-                    genome_disco(g, t),
-                    SCC(g, t),
+                    ssim_val,
+                    gd_val,
+                    scc_val,
                     f1_score,
-                    mse(g, t),
-                    kendall_tau(g, t)
+                    mse_val,
+                    kt_val
                 )
             )
+            f.flush()
             
-            print(tissue, stage, cell_line, cell_counts, chromosome, region_x, region_y, ssim(g, t), genome_disco(g, t), SCC(g, t), f1_score)
+            print(tissue, stage, cell_line, cell_counts, chromosome, region_x, region_y, ssim_val, gd_val, scc_val, f1_score, flush=True)
 
 
 
@@ -389,8 +427,8 @@ def evaluate(results_path, PARAMETERS):
                     generated_folder = os.path.join(cell_count, 'generated')
                     targets_folder = os.path.join(cell_count, 'targets')
 
-                    generated_files = list(map(lambda x: os.path.join(generated_folder, x), os.listdir(generated_folder)))
-                    target_files = list(map(lambda x: os.path.join(targets_folder, x), os.listdir(targets_folder)))
+                    generated_files = sorted(list(map(lambda x: os.path.join(generated_folder, x), os.listdir(generated_folder))))
+                    target_files = sorted(list(map(lambda x: os.path.join(targets_folder, x), os.listdir(targets_folder))))
 
                     run_all_evaluation(generated_files, target_files, results_path, cell_count, PARAMETERS)
 
